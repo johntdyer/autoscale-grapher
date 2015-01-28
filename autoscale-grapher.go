@@ -41,6 +41,37 @@ type Graphite struct {
 	Namespace string
 }
 
+func (c *Config) setDefaults(app *confer.Config) {
+
+	app.SetDefault("app.graphite.port", 2003)
+	app.SetDefault("app.graphite.name_space", "/autoscaling/logstash-indexer")
+
+	c.AwsRegion = aws.USEast
+	c.DebugMode = app.GetBool("app.debug")
+	c.Hostname = getHostname()
+	c.Graphite = &Graphite{
+		Host:      app.GetString("app.graphite.host"),
+		Port:      app.GetInt("app.graphite.port"),
+		Namespace: app.GetString("app.graphite.name_space"),
+	}
+
+	c.AutoScaleGroup = &AutoScaleGroup{
+		Name: app.GetString("app.autoscale.group_name"),
+	}
+
+	log.WithFields(log.Fields{
+		"version":               version,
+		"auto_scale_group_name": c.AutoScaleGroup.Name,
+		"buildDate":             buildDate,
+		"hostname":              c.Hostname,
+		"aws_region":            c.AwsRegion.Name,
+		"graphite_host":         c.Graphite.Host,
+		"graphite_port":         c.Graphite.Port,
+		"graphite_namespace":    c.Graphite.Namespace,
+	}).Debug("Config loaded")
+
+}
+
 func init() {
 
 	log.SetFormatter(&log.TextFormatter{})
@@ -49,40 +80,15 @@ func init() {
 
 	app := confer.NewConfig()
 
-	paths := []string{"config/application.yml"}
+	paths := []string{"/etc/autoscale-grapher/application.yml", "config/application.yml"}
 
 	if err := app.ReadPaths(paths...); err != nil {
-		check_err(err)
+		// check_err(err)
 	}
 
-	// Set defaults
-	app.SetDefault("app.graphite.port", 2003)
-	app.SetDefault("app.graphite.name_space", "/autoscaling/logstash-indexer")
+	config = &Config{}
+	config.setDefaults(app)
 
-	config = &Config{
-		AwsRegion: aws.USEast,
-		DebugMode: app.GetBool("app.debug"),
-		Hostname:  getHostname(),
-		Graphite: &Graphite{
-			Host:      app.GetString("app.graphite.host"),
-			Port:      app.GetInt("app.graphite.port"),
-			Namespace: app.GetString("app.graphite.name_space"),
-		},
-		AutoScaleGroup: &AutoScaleGroup{
-			Name: app.GetString("app.autoscale.group_name"),
-		},
-	}
-
-	log.WithFields(log.Fields{
-		"version":               version,
-		"auto_scale_group_name": config.AutoScaleGroup.Name,
-		"buildDate":             buildDate,
-		"hostname":              config.Hostname,
-		"aws_region":            config.AwsRegion.Name,
-		"graphite_host":         config.Graphite.Host,
-		"graphite_port":         config.Graphite.Port,
-		"graphite_namespace":    config.Graphite.Namespace,
-	}).Debug("Config loaded")
 }
 
 func check_err(err error) {
