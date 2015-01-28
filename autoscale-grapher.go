@@ -114,12 +114,13 @@ func main() {
 	resp, err := asg.DescribeAutoScalingGroups(nil)
 	check_err(err)
 
-	coordinates := fmt.Sprintf(config.Hostname + config.Graphite.Namespace)
+	full_namespace := fmt.Sprintf(config.Hostname + config.Graphite.Namespace)
 
 	for _, i := range resp.AutoScalingGroups {
 		if i.AutoScalingGroupName == config.AutoScaleGroup.Name {
 
 			log.WithFields(log.Fields{
+				"namespace":        full_namespace,
 				"indexer_count":    strconv.Itoa(len(i.Instances)),
 				"max_size":         strconv.FormatInt(i.MaxSize, 10),
 				"min_size":         strconv.FormatInt(i.MinSize, 10),
@@ -127,10 +128,10 @@ func main() {
 				"hostname":         config.Hostname,
 			}).Info("Sending Updates")
 
-			g.SimpleSend(coordinates+"/indexer_count", strconv.Itoa(len(i.Instances)))
-			g.SimpleSend(coordinates+"/max_size", strconv.FormatInt(i.MaxSize, 10))
-			g.SimpleSend(coordinates+"/min_size", strconv.FormatInt(i.MinSize, 10))
-			g.SimpleSend(coordinates+"/desired_capacity", strconv.FormatInt(i.DesiredCapacity, 10))
+			g.SimpleSend(full_namespace+"/indexer_count", strconv.Itoa(len(i.Instances)))
+			g.SimpleSend(full_namespace+"/max_size", strconv.FormatInt(i.MaxSize, 10))
+			g.SimpleSend(full_namespace+"/min_size", strconv.FormatInt(i.MinSize, 10))
+			g.SimpleSend(full_namespace+"/desired_capacity", strconv.FormatInt(i.DesiredCapacity, 10))
 
 		}
 		log.Debug("Update complete")
