@@ -1,5 +1,7 @@
 ---
 app:
+  autoscale:
+    group-name: "asg-foo"
   graphite:
     host: "graphite.server.com"
     port: 2003

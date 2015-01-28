@@ -23,10 +23,16 @@ var (
 )
 
 type Config struct {
-	DebugMode bool
-	Hostname  string
-	AwsRegion aws.Region
-	Graphite  *Graphite
+	DebugMode      bool
+	ASGName        string
+	Hostname       string
+	AwsRegion      aws.Region
+	Graphite       *Graphite
+	AutoScaleGroup *AutoScaleGroup
+}
+
+type AutoScaleGroup struct {
+	Name string
 }
 
 type Graphite struct {
@@ -62,16 +68,20 @@ func init() {
 			Port:      app.GetInt("app.graphite.port"),
 			Namespace: app.GetString("app.graphite.name_space"),
 		},
+		AutoScaleGroup: &AutoScaleGroup{
+			Name: app.GetString("app.autoscale.group_name"),
+		},
 	}
 
 	log.WithFields(log.Fields{
-		"version":            version,
-		"buildDate":          buildDate,
-		"hostname":           config.Hostname,
-		"aws_region":         config.AwsRegion.Name,
-		"graphite_host":      config.Graphite.Host,
-		"graphite_port":      config.Graphite.Port,
-		"graphite_namespace": config.Graphite.Namespace,
+		"version":               version,
+		"auto_scale_group_name": config.AutoScaleGroup.Name,
+		"buildDate":             buildDate,
+		"hostname":              config.Hostname,
+		"aws_region":            config.AwsRegion.Name,
+		"graphite_host":         config.Graphite.Host,
+		"graphite_port":         config.Graphite.Port,
+		"graphite_namespace":    config.Graphite.Namespace,
 	}).Debug("Config loaded")
 }
 
@@ -107,7 +117,7 @@ func main() {
 	coordinates := fmt.Sprintf(config.Hostname + config.Graphite.Namespace)
 
 	for _, i := range resp.AutoScalingGroups {
-		if i.AutoScalingGroupName == "logstash-indexer-auto" {
+		if i.AutoScalingGroupName == config.AutoScaleGroup.Name {
 
 			log.WithFields(log.Fields{
 				"indexer_count":    strconv.Itoa(len(i.Instances)),
